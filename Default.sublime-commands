@@ -1,0 +1,4 @@
+[
+  { "command": "sourcegraph_search_selection", "caption": "Sourcegraph: Search From Selection" },
+  { "command": "sourcegraph_search_from_input", "caption": "Sourcegraph: Search From Input" }
+]
