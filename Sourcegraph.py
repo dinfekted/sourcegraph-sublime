@@ -15,7 +15,7 @@ log.setLevel(logging.INFO)
 
 def gotoSourcegraph(lib, lang, name):
     log.info("sourcegraph: lib=%s lang=%s name=%s" % (lib, lang, name))
-    url = 'http://localhost:3000/api/assist/info?libs=%s&lang=%s&name=%s' % (lib, lang, name)
+    url = 'http://localhost:3000/api/assist/info?from=sourcegraph-sublime-1&libs=%s&lang=%s&name=%s' % (lib, lang, name)
     webbrowser.open_new_tab(url)
 
 class SourcegraphSearchSelectionCommand(sublime_plugin.TextCommand):
