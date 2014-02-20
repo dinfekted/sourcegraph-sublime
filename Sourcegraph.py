@@ -9,10 +9,13 @@ import threading
 import webbrowser
 import urllib.request
 import json
+import os.path
+import subprocess
 from urllib.parse import quote, urlencode
 
 BASE_URL = "http://localhost:3000"
 VIA = "sourcegraph-sublime-1"
+DEFAULT_LIBS = "rails,ruby"
 
 log = logging.getLogger("sourcegraph")
 stderr_hdlr = logging.StreamHandler(sys.stderr)
@@ -27,12 +30,34 @@ def symbolURL(endpoint, params):
 def gotoSourcegraph(params):
     webbrowser.open_new_tab(symbolURL("goto", params))
 
+def libsForFile(filename):
+    dir = filename
+    while True:
+        parentDir = os.path.dirname(dir)
+        if dir == parentDir:
+            # we're at the root dir
+            break
+        dir = parentDir
+        gemfilePath = os.path.join(dir, 'Gemfile')
+        if os.path.exists(gemfilePath):
+            log.info('Gemfile at %s' % gemfilePath)
+            try:
+                out = subprocess.check_output(['ruby', '-rbundler', '-e', 'Bundler.load.dependencies_for.each{|d|puts d.name}'], cwd=dir)
+                libs = out.decode("utf-8").strip().split("\n")
+                return ','.join(libs)
+            except Exception as e:
+                log.warn('Warning: failed to list gems in %s: %s (using default libs %s)' % (gemfilePath, e, DEFAULT_LIBS))
+        
+    log.info('No Gemfile found in any ancestor directory of %s (using default libs %s)' % (filename, DEFAULT_LIBS))
+    return DEFAULT_LIBS
+        
+
 def paramsFromViewSel(view, sel):
     # if the user didn't select anything, search the currently highlighted word
     if sel.empty():
         sel = view.word(sel)
     text = view.substr(sel)
-    return {"libs": "rails,ruby", "lang": "ruby", "name": text}
+    return {"libs": libsForFile(view.file_name()), "lang": "ruby", "name": text}
 
 class SourcegraphSearchSelectionCommand(sublime_plugin.TextCommand):
     def run(self, edit):
