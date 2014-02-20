@@ -44,6 +44,7 @@ def libsForFile(filename):
             try:
                 out = subprocess.check_output(['ruby', '-rbundler', '-e', 'Bundler.load.dependencies_for.each{|d|puts d.name}'], cwd=dir)
                 libs = out.decode("utf-8").strip().split("\n")
+                log.info('Searching using libs: %s' % libs)
                 return ','.join(libs)
             except Exception as e:
                 log.warn('Warning: failed to list gems in %s: %s (using default libs %s)' % (gemfilePath, e, DEFAULT_LIBS))
@@ -83,7 +84,7 @@ class InfoThread(threading.Thread):
                 log.info('DATA: %s' % data)
                 self.results = json.loads(data)
                 if len(self.results) > 0:
-                    choices = ['%s   —   %s' % (r["specificPath"], r["repo"]) for r in self.results]
+                    choices = ['%s%s   —   %s' % (r["specificPath"], r["typeExpr"], r["repo"]) for r in self.results]
                 else:
                     choices = ['(no results found)']
                 self.view.show_popup_menu(choices, self.on_done)
