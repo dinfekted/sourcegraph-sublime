@@ -15,7 +15,7 @@ log.setLevel(logging.INFO)
 
 def gotoSourcegraph(lib, lang, name):
     log.info("sourcegraph: lib=%s lang=%s name=%s" % (lib, lang, name))
-    url = 'http://localhost:3000/api/assist/info?lib=%s&lang=%s&name=%s' % (lib, lang, name)
+    url = 'http://localhost:3000/api/assist/info?libs=%s&lang=%s&name=%s' % (lib, lang, name)
     webbrowser.open_new_tab(url)
 
 class SourcegraphSearchSelectionCommand(sublime_plugin.TextCommand):
@@ -25,7 +25,7 @@ class SourcegraphSearchSelectionCommand(sublime_plugin.TextCommand):
             if selection.empty():
                 selection = self.view.word(selection)
             text = self.view.substr(selection)
-            gotoSourcegraph("rails", "ruby", text)
+            gotoSourcegraph("rails,ruby", "ruby", text)
 
 
 class SourcegraphSearchFromInputCommand(sublime_plugin.WindowCommand):
