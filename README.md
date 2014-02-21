@@ -6,11 +6,15 @@ the [Sourcegraph](https://sourcegraph.com) code search engine to provide:
 * Project-aware documentation and jump-to-definition for RubyGems
 * Quick search interface to Sourcegraph
 
-This plugin currently only supports Ruby. We plan to add support for Python, Go, and JavaScript soon.
+This plugin currently only supports Ruby, and only docs and definitions for
+external RubyGems are available. (No local source analysis is performed yet;
+that's a TODO.) We plan to add support for Python, Go, and JavaScript soon.
 
 ## How to use
 
 **Install**: clone this git repository to your Packages folder.
+
+**Requirements**: A `ruby` with the `bundler` gem must exist in your `$PATH`.
 
 ### Search current selection on Sourcegraph (context menu)
 
