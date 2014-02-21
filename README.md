@@ -35,7 +35,7 @@ to report issues.
 ### Search anything on Sourcegraph (palette)
 
 Open the palette (ctrl-shift-P or cmd-shift-P) and select _Sourcegraph: Search
-from selection_, and then type a [Sourcegraph search
+from input_, and then type a [Sourcegraph search
 query](https://sourcegraph.com/help/users/search). The search results will open
 in a new tab in your most recently browser window.
 
