@@ -81,10 +81,9 @@ class InfoThread(threading.Thread):
             try:
                 resp = urllib.request.urlopen(symbolURL("info", self.params))
                 data = resp.read().decode("utf-8")
-                log.info('DATA: %s' % data)
                 self.results = json.loads(data)
                 if len(self.results) > 0:
-                    choices = ['%s%s   —   %s' % (r["specificPath"], r["typeExpr"], r["repo"]) for r in self.results]
+                    choices = ['%s%s\n\t\t%s\n\t\t%s\n' % (r["specificPath"], r.get("typeExpr", ""), r["repo"], r.get("doc", "").replace("\n", "\n\t\t")) for r in self.results]
                 else:
                     choices = ['(no results found)']
                 self.view.show_popup_menu(choices, self.on_done)
