@@ -13,7 +13,7 @@ import os.path
 import subprocess
 from urllib.parse import quote, urlencode
 
-BASE_URL = "http://localhost:3000"
+BASE_URL = "https://sourcegraph.com"
 VIA = "sourcegraph-sublime-1"
 DEFAULT_LIBS = "rails,ruby"
 
