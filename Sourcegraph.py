@@ -79,8 +79,8 @@ class InfoThread(threading.Thread):
     def run(self):
         def show_popup_menu():
             try:
-                resp = urllib.request.urlopen(symbolURL("info", self.params))
-                data = resp.read().decode("utf-8")
+                resp = fetch_url(symbolURL("info", self.params))
+                data = resp
                 self.results = json.loads(data)
                 if len(self.results) > 0:
                     choices = ['%s%s\n\t\t%s\n\t\t%s\n' % (r["specificPath"], r.get("typeExpr", ""), r["repo"], r.get("doc", "").replace("\n", "\n\t\t")) for r in self.results]
@@ -111,3 +111,14 @@ class SourcegraphSearchFromInputCommand(sublime_plugin.WindowCommand):
 
     def on_cancel(self):
         pass
+
+def fetch_url(url):
+   '''Linux binaries of ST don't include ssl, so we need to shell out to curl in that case.'''
+   try:
+       import _ssl
+       return urllib.request.urlopen(url).read().decode("utf-8")
+   except:       
+       try:
+           return subprocess.check_output(["curl", "--", url]).decode('utf-8')
+       except subprocess.CalledProcessError as e:
+           sublime.error_message("Can't fetch results from the Sourcegraph API. Your Python installation wasn't compiled with SSL and curl failed. (Linux binaries of ST don't include SSL in their built-in Python.")
