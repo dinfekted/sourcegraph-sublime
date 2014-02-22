@@ -7,11 +7,14 @@ import sys
 import threading
 
 import webbrowser
-import urllib.request
+try:
+    from urllib.request import urlopen
+    from urllib.parse import urlencode, quote
+except ImportError:
+    from urllib import urlopen, urlencode, quote
 import json
 import os.path
 import subprocess
-from urllib.parse import quote, urlencode
 
 BASE_URL = "https://sourcegraph.com"
 VIA = "sourcegraph-sublime-1"
@@ -42,7 +45,7 @@ def libsForFile(filename):
         if os.path.exists(gemfilePath):
             log.info('Gemfile at %s' % gemfilePath)
             try:
-                out = subprocess.check_output(['ruby', '-rbundler', '-e', 'Bundler.load.dependencies_for.each{|d|puts d.name}'], cwd=dir)
+                out = check_output(['ruby', '-rbundler', '-e', 'Bundler.load.dependencies_for.each{|d|puts d.name}'], cwd=dir)
                 libs = out.decode("utf-8").strip().split("\n")
                 log.info('Searching using libs: %s' % libs)
                 return ','.join(libs)
@@ -83,10 +86,14 @@ class InfoThread(threading.Thread):
                 data = resp
                 self.results = json.loads(data)
                 if len(self.results) > 0:
-                    choices = ['%s%s\n\t\t%s\n\t\t%s\n' % (r["specificPath"], r.get("typeExpr", ""), r["repo"], r.get("doc", "").replace("\n", "\n\t\t")) for r in self.results]
+                    choices = [u"%s%s   \u2014   %s" % (r["specificPath"], r.get("typeExpr", ""), r["repo"]) for r in self.results]
                 else:
                     choices = ['(no results found)']
-                self.view.show_popup_menu(choices, self.on_done)
+                # ST2 lacks view.show_popup_menu
+                if hasattr(self.view, "show_popup_menu"):
+                    self.view.show_popup_menu(choices, self.on_done)
+                else:
+                    self.view.window().show_quick_panel(choices, self.on_done)
             except Exception as e:
                 log.error('failed to get symbols: %s' % e)
         sublime.set_timeout(show_popup_menu, 10)
@@ -116,9 +123,31 @@ def fetch_url(url):
    '''Linux binaries of ST don't include ssl, so we need to shell out to curl in that case.'''
    try:
        import _ssl
-       return urllib.request.urlopen(url).read().decode("utf-8")
+       return urlopen(url).read().decode("utf-8")
    except:       
        try:
-           return subprocess.check_output(["curl", "--", url]).decode('utf-8')
+           return check_output(["curl", "--", url]).decode('utf-8')
        except subprocess.CalledProcessError as e:
            sublime.error_message("Can't fetch results from the Sourcegraph API. Your Python installation wasn't compiled with SSL and curl failed. (Linux binaries of ST don't include SSL in their built-in Python.")
+
+# Python 2.6 doesn't have subprocess.check_output, so backport it. (From
+# https://gist.github.com/edufelipe/1027906.)
+def check_output(*popenargs, **kwargs):
+    r"""Run command with arguments and return its output as a byte string.
+ 
+    Backported from Python 2.7 as it's implemented as pure python on stdlib.
+ 
+    >>> check_output(['/usr/bin/python', '--version'])
+    Python 2.6.2
+    """
+    process = subprocess.Popen(stdout=subprocess.PIPE, *popenargs, **kwargs)
+    output, unused_err = process.communicate()
+    retcode = process.poll()
+    if retcode:
+        cmd = kwargs.get("args")
+        if cmd is None:
+            cmd = popenargs[0]
+        error = subprocess.CalledProcessError(retcode, cmd)
+        error.output = output
+        raise error
+    return output

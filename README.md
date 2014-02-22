@@ -1,6 +1,6 @@
-# Sourcegraph for Sublime Text 3
+# Sourcegraph for Sublime Text 2 & 3
 
-A plugin for [Sublime Text 3](http://www.sublimetext.com/3) that integrates with
+A plugin for [Sublime Text 2 & 3](http://www.sublimetext.com/) that integrates with
 the [Sourcegraph](https://sourcegraph.com) code search engine to provide:
 
 * Project-aware documentation and jump-to-definition for RubyGems
@@ -60,6 +60,7 @@ of the [GraphKit](http://graphkit.org/) project.
 * Currently this plugin hits the [Sourcegraph](https://sourcegraph.com) API, which is undocumented. We're working to fix that.
 * We're also working on adding support for local Ruby analysis using [RubySonar](https://github.com/yinwang0/rubysonar). This means you can get docs and jump-to-definition for local files, not just external RubyGems.
 * Upload to Package Control.
+* There's no show_popup_menu API in ST2, so the list of matches in ST2 is not displayed next to the cursor. (In ST3, it is.)
 
 
 ## Contributors
