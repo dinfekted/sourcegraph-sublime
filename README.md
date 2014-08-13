@@ -1,8 +1,8 @@
 # Sourcegraph for Sublime Text 2 & 3
 
 A plugin for [Sublime Text 2 & 3](http://www.sublimetext.com/) that integrates
-with [srclib](https://srclib.org) the [Sourcegraph](https://sourcegraph.com)
-code search engine to provide:
+with [srclib](https://srclib.org) and the
+[Sourcegraph](https://sourcegraph.com) code search engine to provide:
 
 * Project-aware documentation, jump-to-definition, and find usages
 * Quick search interface to [Sourcegraph](https://sourcegraph.com)
