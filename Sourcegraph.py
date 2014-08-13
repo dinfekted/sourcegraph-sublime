@@ -18,7 +18,6 @@ import subprocess
 
 BASE_URL = "https://sourcegraph.com"
 VIA = "sourcegraph-sublime-1"
-DEFAULT_LIBS = "rails,ruby"
 
 log = logging.getLogger("sourcegraph")
 stderr_hdlr = logging.StreamHandler(sys.stderr)
@@ -26,76 +25,84 @@ stderr_hdlr.setFormatter(logging.Formatter("%(name)s: %(levelname)s: %(message)s
 log.handlers = [stderr_hdlr]
 log.setLevel(logging.INFO)
 
-def symbolURL(endpoint, params):
-    url = BASE_URL + '/api/assist/%s?_via=%s&%s' % (endpoint, VIA, urlencode(params))
-    return url
+def gotoSourcegraph(path, params):
+    params['_via'] = VIA
+    webbrowser.open_new_tab(BASE_URL + path + '?' + urlencode(params))     
 
-def gotoSourcegraph(params):
-    webbrowser.open_new_tab(symbolURL("goto", params))
-
-def libsForFile(filename):
-    dir = filename
-    while True:
-        parentDir = os.path.dirname(dir)
-        if dir == parentDir:
-            # we're at the root dir
-            break
-        dir = parentDir
-        gemfilePath = os.path.join(dir, 'Gemfile')
-        if os.path.exists(gemfilePath):
-            log.info('Gemfile at %s' % gemfilePath)
-            try:
-                out = check_output(['ruby', '-rbundler', '-e', 'Bundler.load.dependencies_for.each{|d|puts d.name}'], cwd=dir)
-                libs = out.decode("utf-8").strip().split("\n")
-                log.info('Searching using libs: %s' % libs)
-                return ','.join(libs)
-            except Exception as e:
-                log.warn('Warning: failed to list gems in %s: %s (using default libs %s)' % (gemfilePath, e, DEFAULT_LIBS))
-        
-    log.info('No Gemfile found in any ancestor directory of %s (using default libs %s)' % (filename, DEFAULT_LIBS))
-    return DEFAULT_LIBS
-        
-
-def paramsFromViewSel(view, sel):
+def textFromViewSel(view, sel):
     # if the user didn't select anything, search the currently highlighted word
     if sel.empty():
         sel = view.word(sel)
-    text = view.substr(sel)
-    return {"libs": libsForFile(view.file_name()), "lang": "ruby", "name": text}
+    return view.substr(sel)
 
 class SourcegraphSearchSelectionCommand(sublime_plugin.TextCommand):
     def run(self, edit):
         for sel in self.view.sel():
-            gotoSourcegraph(paramsFromViewSel(self.view, sel))
+            # TODO(sqs): get lang from current file extension
+            gotoSourcegraph('/search', {'q': textFromViewSel(self.view, sel)})
 
-class SourcegraphShowInfoCommand(sublime_plugin.TextCommand):
+class SourcegraphDescribeCommand(sublime_plugin.TextCommand):
     def run(self, edit):
         for sel in self.view.sel():
-            InfoThread(self.view, paramsFromViewSel(self.view, sel)).start()
+            InfoThread(self.view, sel, 'describe').start()
+
+class SourcegraphUsagesCommand(sublime_plugin.TextCommand):
+    def run(self, edit):
+        for sel in self.view.sel():
+            InfoThread(self.view, sel, 'usages').start()
 
 class InfoThread(threading.Thread):
-    def __init__(self, view, params):
+    def __init__(self, view, sel, what):
         self.view = view
-        self.params = params
+        self.sel = sel
+        self.what = what
         threading.Thread.__init__(self)
 
     def run(self):
         def show_popup_menu():
             try:
-                resp = fetch_url(symbolURL("info", self.params))
-                data = resp
-                self.results = json.loads(data)
-                if len(self.results) > 0:
-                    choices = [u"%s%s   \u2014   %s" % (r["specificPath"], r.get("typeExpr", ""), r["repo"]) for r in self.results]
-                else:
-                    choices = ['(no results found)']
-                # ST2 lacks view.show_popup_menu
-                if hasattr(self.view, "show_popup_menu"):
-                    self.view.show_popup_menu(choices, self.on_done)
-                else:
-                    self.view.window().show_quick_panel(choices, self.on_done)
+                file_name = self.view.file_name()
+                log.info("Selection: %s %d-%d" % (file_name, self.sel.begin(), self.sel.end()))
+                data = check_output(["src", "api", "describe", "--file", file_name, "--start-byte", str(self.sel.begin()), "--examples"])
+                self.resp = json.loads(data.decode("utf8"))
+
+                if self.what == 'describe':
+                    defn = self.resp['Def']
+                    choices = [defn['Name']]
+                    if 'DocHTML' in defn:
+                        choices.append(strip_tags(defn['DocHTML']))
+                    for k, v in defn['Data'].items():
+                        choices.append('%s: %s' % (k, str(v)))
+
+                    if self.resp['Examples']:
+                        for x in self.resp['Examples']:
+                            choices.append(format_example(x, show_src=False))
+
+                    # ST2 lacks view.show_popup_menu
+                    if hasattr(self.view, "show_popup_menu"):
+                        self.view.show_popup_menu(choices, self.on_done, sublime.MONOSPACE_FONT)
+                    else:
+                        # TODO(sqs): multi-line rows don't work in show_quick_panel
+                        self.view.window().show_quick_panel(choices, self.on_done, sublime.MONOSPACE_FONT)
+                elif self.what == 'usages':
+                    #### show examples in output panel
+                    # get_output_panel doesn't "get" the panel, it *creates* it, 
+                    # so we should only call get_output_panel once
+                    panel_name = 'examples'
+                    v = self.view.window().create_output_panel(panel_name)
+                    v.set_read_only(True)
+                    v.set_syntax_file('Packages/Go/Go.tmLanguage')
+                    #region = sublime.Region(0, v.size())
+                    #v.erase(None, region)
+                    #v.insert(None, 0, "foo")
+                    #v.show(0)
+                    #v.run_command('panel_output', {'text': "foo\n"})
+                    if self.resp['Examples']:
+                        for x in self.resp['Examples']:
+                            v.run_command('append', {'characters': format_example(x, show_src=True)})
+                    self.view.window().run_command("show_panel", {"panel": "output." + panel_name})
             except Exception as e:
-                log.error('failed to get symbols: %s' % e)
+                log.error('src api describe failed: %s' % e)
         sublime.set_timeout(show_popup_menu, 10)
 
     def on_done(self, picked):
@@ -104,6 +111,13 @@ class InfoThread(threading.Thread):
         sym = self.results[picked]
         webbrowser.open_new_tab(BASE_URL + ('/%s/symbols/%s/%s' % (quote(sym['repo']), quote(sym['lang']), quote(sym['path']))))
 
+def format_example(x, show_src):
+    xstr = '▶ %s/%s:%s-%s\n' % (x['Repo'], x['File'], x['StartLine'], x['EndLine'])
+    if show_src:
+        xstr += "\n" + strip_tags(x['SrcHTML'])
+        xstr += "\n▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁\n\n"
+    return xstr
+
 class SourcegraphSearchFromInputCommand(sublime_plugin.WindowCommand):
     def run(self):
         # Get the search item
@@ -111,24 +125,13 @@ class SourcegraphSearchFromInputCommand(sublime_plugin.WindowCommand):
             self.on_done, self.on_change, self.on_cancel)
 
     def on_done(self, input):
-        webbrowser.open_new_tab(BASE_URL + '/search?q=%s&_via=%s' % (quote(input), VIA))
+        gotoSourcegraph('/search', {'q': input})
 
     def on_change(self, input):
         pass
 
     def on_cancel(self):
         pass
-
-def fetch_url(url):
-   '''Linux binaries of ST don't include ssl, so we need to shell out to curl in that case.'''
-   try:
-       import _ssl
-       return urlopen(url).read().decode("utf-8")
-   except:       
-       try:
-           return check_output(["curl", "--", url]).decode('utf-8')
-       except subprocess.CalledProcessError as e:
-           sublime.error_message("Can't fetch results from the Sourcegraph API. Your Python installation wasn't compiled with SSL and curl failed. (Linux binaries of ST don't include SSL in their built-in Python.")
 
 # Python 2.6 doesn't have subprocess.check_output, so backport it. (From
 # https://gist.github.com/edufelipe/1027906.)
@@ -151,3 +154,24 @@ def check_output(*popenargs, **kwargs):
         error.output = output
         raise error
     return output
+
+# from http://stackoverflow.com/a/925630
+try:
+    # python 3
+    from html.parser import HTMLParser
+except:
+    # python 2
+    from HTMLParser import HTMLParser
+class MLStripper(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.reset()
+        self.fed = []
+    def handle_data(self, d):
+        self.fed.append(d)
+    def get_data(self):
+        return ''.join(self.fed)
+def strip_tags(html):
+    s = MLStripper()
+    s.feed(html)
+    return s.get_data()

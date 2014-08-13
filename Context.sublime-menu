@@ -1,4 +1,5 @@
 [
   { "caption": "-"},
-  { "command": "sourcegraph_show_info", "caption": "Search on Sourcegraph..." }
+  { "command": "sourcegraph_describe", "caption": "✱ Documentation & type" },
+  { "command": "sourcegraph_usages", "caption": "✱ Usages & examples" }
 ]
