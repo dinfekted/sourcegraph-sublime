@@ -62,8 +62,10 @@ class InfoThread(threading.Thread):
         def show_popup_menu():
             try:
                 file_name = self.view.file_name()
-                log.info("Selection: %s %d-%d" % (file_name, self.sel.begin(), self.sel.end()))
-                data = check_output(["src", "api", "describe", "--file", file_name, "--start-byte", str(self.sel.begin()), "--examples"])
+                cmd = ["src", "api", "describe", "--file", file_name, "--start-byte", str(self.sel.begin())]
+                if self.what != 'usages':
+                    cmd.append("--no-examples")
+                data = check_output(cmd)
                 self.resp = json.loads(data.decode("utf8"))
 
                 if self.what == 'describe':
@@ -73,10 +75,6 @@ class InfoThread(threading.Thread):
                         choices.append(strip_tags(defn['DocHTML']))
                     for k, v in defn['Data'].items():
                         choices.append('%s: %s' % (k, str(v)))
-
-                    if self.resp['Examples']:
-                        for x in self.resp['Examples']:
-                            choices.append(format_example(x, show_src=False))
 
                     # ST2 lacks view.show_popup_menu
                     if hasattr(self.view, "show_popup_menu"):
