@@ -88,7 +88,7 @@ class InfoThread(threading.Thread):
                     # so we should only call get_output_panel once
                     panel_name = 'examples'
                     v = self.view.window().create_output_panel(panel_name)
-                    v.set_read_only(True)
+                    v.set_read_only(False)
                     v.set_syntax_file('Packages/Go/Go.tmLanguage')
                     #region = sublime.Region(0, v.size())
                     #v.erase(None, region)
@@ -98,6 +98,7 @@ class InfoThread(threading.Thread):
                     if self.resp['Examples']:
                         for x in self.resp['Examples']:
                             v.run_command('append', {'characters': format_example(x, show_src=True)})
+                    v.set_read_only(True)
                     self.view.window().run_command("show_panel", {"panel": "output." + panel_name})
             except Exception as e:
                 log.error('src api describe failed: %s' % e)
@@ -113,7 +114,7 @@ def format_example(x, show_src):
     xstr = '▶ %s/%s:%s-%s\n' % (x['Repo'], x['File'], x['StartLine'], x['EndLine'])
     if show_src:
         xstr += "\n" + strip_tags(x['SrcHTML'])
-        xstr += "\n▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁\n\n"
+        xstr += "\n▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁\n\n"
     return xstr
 
 class SourcegraphSearchFromInputCommand(sublime_plugin.WindowCommand):
