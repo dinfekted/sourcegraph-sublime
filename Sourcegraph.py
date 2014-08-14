@@ -27,13 +27,32 @@ log.setLevel(logging.INFO)
 
 def gotoSourcegraph(path, params):
     params['_via'] = VIA
-    webbrowser.open_new_tab(BASE_URL + path + '?' + urlencode(params))     
+    webbrowser.open_new_tab(BASE_URL + path + '?' + urlencode(params))
 
 def textFromViewSel(view, sel):
     # if the user didn't select anything, search the currently highlighted word
     if sel.empty():
         sel = view.word(sel)
     return view.substr(sel)
+
+def show_location(view, start, end, retries=0):
+  if not view.is_loading():
+    def_region = sublime.Region(start, end)
+
+    view.sel().clear()
+    view.sel().add(def_region)
+    view.show_at_center(start)
+  else:
+    if retries < 10:
+      sublime.set_timeout(lambda: show_location(view, start, end, retries+1), 10)
+      log.info('waiting for file to load...')
+    else:
+      log.error('timed out waiting for file load')
+
+class SourcegraphJumpToDefinition(sublime_plugin.TextCommand):
+  def run(self, edit):
+    for sel in self.view.sel():
+      InfoThread(self.view, sel, 'jump').start()
 
 class SourcegraphSearchSelectionCommand(sublime_plugin.TextCommand):
     def run(self, edit):
@@ -84,7 +103,7 @@ class InfoThread(threading.Thread):
                         self.view.window().show_quick_panel(choices, self.on_done, sublime.MONOSPACE_FONT)
                 elif self.what == 'usages':
                     #### show examples in output panel
-                    # get_output_panel doesn't "get" the panel, it *creates* it, 
+                    # get_output_panel doesn't "get" the panel, it *creates* it,
                     # so we should only call get_output_panel once
                     panel_name = 'examples'
                     v = self.view.window().create_output_panel(panel_name)
@@ -100,8 +119,19 @@ class InfoThread(threading.Thread):
                             v.run_command('append', {'characters': format_example(x, show_src=True)})
                     v.set_read_only(True)
                     self.view.window().run_command("show_panel", {"panel": "output." + panel_name})
+                elif self.what == 'jump':
+                    Def = self.resp['Def']
+                    if 'Repo' in Def:
+                        url = BASE_URL + "/%s/.%s/%s/.def/%s" % (Def['Repo'], Def['UnitType'], Def['Unit'], Def['Path'])
+                        webbrowser.open_new_tab(url)
+                    else:
+                        # TODO: Resolve to local file - waiting for Src API to expose method for this
+                        view = self.view.window().open_file(Def['File'])
+                        sublime.set_timeout(lambda: show_location(view, Def['DefStart'], Def['DefEnd']), 10)
+
             except Exception as e:
                 log.error('src api describe failed: %s' % e)
+
         sublime.set_timeout(show_popup_menu, 10)
 
     def on_done(self, picked):
@@ -136,9 +166,9 @@ class SourcegraphSearchFromInputCommand(sublime_plugin.WindowCommand):
 # https://gist.github.com/edufelipe/1027906.)
 def check_output(*popenargs, **kwargs):
     r"""Run command with arguments and return its output as a byte string.
- 
+
     Backported from Python 2.7 as it's implemented as pure python on stdlib.
- 
+
     >>> check_output(['/usr/bin/python', '--version'])
     Python 2.6.2
     """

@@ -1,5 +1,6 @@
 [
   { "caption": "-"},
+  { "command": "sourcegraph_jump_to_definition", "caption": "✱ Jump to Definition" },
   { "command": "sourcegraph_describe", "caption": "✱ Documentation & type" },
   { "command": "sourcegraph_usages", "caption": "✱ Usages & examples" }
 ]
