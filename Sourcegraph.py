@@ -128,8 +128,12 @@ class InfoThread(threading.Thread):
                     else:
                         # FIXME: Will only work if the sublime directory matches the srclib repository build root
                         file_path = os.path.join(self.view.window().folders()[0], Def['File'])
-                        view = self.view.window().open_file(file_path)
-                        sublime.set_timeout(lambda: show_location(view, Def['DefStart'], Def['DefEnd']), 10)
+
+                        if os.path.isfile(file_path):
+                          view = self.view.window().open_file(file_path)
+                          sublime.set_timeout(lambda: show_location(view, Def['DefStart'], Def['DefEnd']), 10)
+                        else:
+                          log.error('File %s does not exist.' % file_path)
 
             except Exception as e:
                 log.error('src api describe failed: %s' % e)
