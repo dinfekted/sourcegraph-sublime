@@ -22,6 +22,16 @@ is used to construct the query. This includes information such as the clone
 URL of the repository you're currently in, the filename and character
 position, and the name of the identifier's definition.
 
+**Keybindings:**
+Some example keybindings for the various commands
+```json
+[
+	{ "keys" : ["alt+."], "command": "sourcegraph_jump_to_definition" },
+	{ "keys" : ["ctrl+alt+d"], "command": "sourcegraph_describe" },
+	{ "keys" : ["ctrl+alt+e"], "command": "sourcegraph_usages" }
+]
+```
+
 ### Documentation & type (context menu)
 
 Right-click on an identifier or a selection and select _Documentation & type_

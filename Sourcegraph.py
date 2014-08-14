@@ -122,11 +122,13 @@ class InfoThread(threading.Thread):
                 elif self.what == 'jump':
                     Def = self.resp['Def']
                     if 'Repo' in Def:
+                        # TODO: Resolve to local file - waiting for Src API to expose method for this
                         url = BASE_URL + "/%s/.%s/%s/.def/%s" % (Def['Repo'], Def['UnitType'], Def['Unit'], Def['Path'])
                         webbrowser.open_new_tab(url)
                     else:
-                        # TODO: Resolve to local file - waiting for Src API to expose method for this
-                        view = self.view.window().open_file(Def['File'])
+                        # FIXME: Will only work if the sublime directory matches the srclib repository build root
+                        file_path = os.path.join(self.view.window().folders()[0], Def['File'])
+                        view = self.view.window().open_file(file_path)
                         sublime.set_timeout(lambda: show_location(view, Def['DefStart'], Def['DefEnd']), 10)
 
             except Exception as e:
