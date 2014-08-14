@@ -10,7 +10,7 @@ with [srclib](https://srclib.org) and the
 
 ## How to use
 
-**Install:** clone this git repository to your Packages folder.
+**Install:** from [Package Control](https://sublime.wbond.net/packages/Sourcegraph), or clone this git repository to your Packages folder.
 
 **Requirements:** The [srclib](https://srclib.org) src tool must be installed,
 as well as srclib toolchains for the languages you want to use this plugin
@@ -54,5 +54,4 @@ tracker](https://github.com/sourcegraph/sourcegraph.com/issues/new) or to
 ## TODOs/notes
 
 
-* Upload to Package Control.
 * There's no show_popup_menu API in ST2, so the list of matches in ST2 is not displayed next to the cursor. (In ST3, it is.)
