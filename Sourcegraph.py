@@ -126,10 +126,8 @@ class InfoThread(threading.Thread):
                         url = BASE_URL + "/%s/.%s/%s/.def/%s" % (Def['Repo'], Def['UnitType'], Def['Unit'], Def['Path'])
                         webbrowser.open_new_tab(url)
                     else:
-                        # FIXME: Will only work if the sublime directory matches the srclib repository build root
-                        file_path = os.path.join(self.view.window().folders()[0], Def['File'])
-
-                        if os.path.isfile(file_path):
+                        file_path = Def['File']
+                        if os.path.isfile(file_path): # Ensure that file exists before trying to open
                           view = self.view.window().open_file(file_path)
                           sublime.set_timeout(lambda: show_location(view, Def['DefStart'], Def['DefEnd']), 10)
                         else:
