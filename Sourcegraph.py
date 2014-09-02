@@ -1,4 +1,5 @@
 # based on Stackoverflow Search Plugin by Eric Martel (emartel@gmail.com / www.ericmartel.com)
+# coding=utf-8
 
 import logging
 import sublime
