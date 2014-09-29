@@ -53,6 +53,21 @@ will open in a new tab in your most recently browser window.
 Or, select some text in the editor and select _Sourcegraph: Search from
 selection_ in the palette to search for your selection on Sourcegraph.
 
+### Troubleshooting
+
+If you're having issues with the plugin, run this command to check
+that the `src` tool is on your path:
+
+```
+import subprocess; subprocess.check_output("src --help", shell=True)
+```
+
+If this errors with a message like `subprocess.CalledProcessError:
+Command 'src --help' returned non-zero exit status 127`, that means
+the src tool isn't on your path. See [issue
+2](https://github.com/sourcegraph/sourcegraph-sublime/issues/2) for
+more details and a workaround.
+
 ## Reporting issues
 
 Report issues related to this plugin on the [GitHub
