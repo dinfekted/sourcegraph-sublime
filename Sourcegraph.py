@@ -25,6 +25,11 @@ stderr_hdlr = logging.StreamHandler(sys.stderr)
 stderr_hdlr.setFormatter(logging.Formatter("%(name)s: %(levelname)s: %(message)s"))
 log.handlers = [stderr_hdlr]
 log.setLevel(logging.INFO)
+settings = {}
+
+def plugin_loaded ():
+    global settings
+    settings = sublime.load_settings('Sourcegraph.sublime-settings')
 
 def gotoSourcegraph(path, params):
     params['_via'] = VIA
@@ -82,7 +87,7 @@ class InfoThread(threading.Thread):
         def show_popup_menu():
             try:
                 file_name = self.view.file_name()
-                cmd = ["src", "api", "describe", "--file", file_name, "--start-byte", str(self.sel.begin())]
+                cmd = [settings.get('which_src'), "api", "describe", "--file", file_name, "--start-byte", str(self.sel.begin())]
                 if self.what != 'usages':
                     cmd.append("--no-examples")
                 data = check_output(cmd)

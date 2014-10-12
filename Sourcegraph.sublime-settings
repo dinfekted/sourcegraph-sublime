@@ -1,0 +1,4 @@
+{
+	/* 'which_src' is the path of the 'src' binary to use. It is 'src' by default, which is evaluated by your shell. */
+	"which_src": "src"
+}
