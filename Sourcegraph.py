@@ -100,7 +100,6 @@ class InfoThread(threading.Thread):
                         choices.append(strip_tags(defn['DocHTML']))
                     for k, v in defn['Data'].items():
                         choices.append('%s: %s' % (k, str(v)))
-                    log.error(defn)
                     # ST2 lacks view.show_popup_menu
                     if hasattr(self.view, "show_popup_menu"):
                         self.view.show_popup_menu(choices, self.on_done, sublime.MONOSPACE_FONT)
@@ -115,14 +114,14 @@ class InfoThread(threading.Thread):
                     v = self.view.window().create_output_panel(panel_name)
                     v.set_read_only(False)
                     v.set_syntax_file('Packages/Go/Go.tmLanguage')
-                    #region = sublime.Region(0, v.size())
-                    #v.erase(None, region)
-                    #v.insert(None, 0, "foo")
-                    #v.show(0)
-                    #v.run_command('panel_output', {'text': "foo\n"})
                     if self.resp['Examples']:
                         for x in self.resp['Examples']:
                             v.run_command('append', {'characters': format_example(x, show_src=True)})
+                    else:
+                        ex_str = "No examples"
+                        if self.resp['Def'] and self.resp['Def']['Path']:
+                            ex_str += " for " + self.resp['Def']['Path']
+                        v.run_command('append', {'characters': ex_str})
                     v.set_read_only(True)
                     self.view.window().run_command("show_panel", {"panel": "output." + panel_name})
                 elif self.what == 'jump':
