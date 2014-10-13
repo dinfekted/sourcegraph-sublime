@@ -1,4 +1,8 @@
 {
 	/* 'which_src' is the path of the 'src' binary to use. It is 'src' by default, which is evaluated by your shell. */
-	"which_src": "src"
+	"which_src": "src",
+	/* 'gopath' overrides the environmental variable $GOPATH for running commands. */
+	"gopath": "",
+	/* 'goroot' overrides the environmental variables $GOROOT for running commands. */
+	"goroot": "",
 }

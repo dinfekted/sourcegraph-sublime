@@ -16,6 +16,7 @@ except ImportError:
 import json
 import os.path
 import subprocess
+import os
 
 BASE_URL = "https://sourcegraph.com"
 VIA = "sourcegraph-sublime-1"
@@ -26,6 +27,16 @@ stderr_hdlr.setFormatter(logging.Formatter("%(name)s: %(levelname)s: %(message)s
 log.handlers = [stderr_hdlr]
 log.setLevel(logging.INFO)
 settings = {}
+
+def getenv():
+    env = os.environ
+    gopath = settings.get('gopath')
+    if gopath:
+        env['GOPATH'] = gopath
+    goroot = settings.get('goroot')
+    if goroot:
+        env['GOROOT'] = goroot
+    return env
 
 def plugin_loaded ():
     global settings
@@ -90,7 +101,7 @@ class InfoThread(threading.Thread):
                 cmd = [settings.get('which_src'), "api", "describe", "--file", file_name, "--start-byte", str(self.sel.begin())]
                 if self.what != 'usages':
                     cmd.append("--no-examples")
-                data = check_output(cmd)
+                data = check_output(cmd, env=getenv())
                 self.resp = json.loads(data.decode("utf8"))
 
                 if self.what == 'describe':
