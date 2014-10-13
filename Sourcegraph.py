@@ -100,7 +100,7 @@ class InfoThread(threading.Thread):
                         choices.append(strip_tags(defn['DocHTML']))
                     for k, v in defn['Data'].items():
                         choices.append('%s: %s' % (k, str(v)))
-
+                    log.error(defn)
                     # ST2 lacks view.show_popup_menu
                     if hasattr(self.view, "show_popup_menu"):
                         self.view.show_popup_menu(choices, self.on_done, sublime.MONOSPACE_FONT)
@@ -151,10 +151,10 @@ class InfoThread(threading.Thread):
         webbrowser.open_new_tab(BASE_URL + ('/%s/symbols/%s/%s' % (quote(sym['repo']), quote(sym['lang']), quote(sym['path']))))
 
 def format_example(x, show_src):
-    xstr = '▶ %s/%s:%s-%s\n' % (x['Repo'], x['File'], x['StartLine'], x['EndLine'])
+    xstr = u'▶ %s/%s:%s-%s\n' % (x['Repo'], x['File'], x['StartLine'], x['EndLine'])
     if show_src:
-        xstr += "\n" + strip_tags(x['SrcHTML'])
-        xstr += "\n▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁\n\n"
+        xstr += u"\n" + strip_tags(x['SrcHTML'])
+        xstr += u"\n▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁\n\n"
     return xstr
 
 class SourcegraphSearchFromInputCommand(sublime_plugin.WindowCommand):
