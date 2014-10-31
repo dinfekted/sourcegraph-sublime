@@ -59,11 +59,11 @@ If you're having issues with the plugin, run this command to check
 that the `src` tool is on your path:
 
 ```
-import subprocess; subprocess.check_output("src --help", shell=True)
+import subprocess; subprocess.check_output("src version", shell=True)
 ```
 
 If this errors with a message like `subprocess.CalledProcessError:
-Command 'src --help' returned non-zero exit status 127`, that means
+Command 'src version' returned non-zero exit status 127`, that means
 the src tool isn't on your path. See [issue
 2](https://github.com/sourcegraph/sourcegraph-sublime/issues/2) for
 more details and a workaround.
