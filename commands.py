@@ -1,10 +1,7 @@
-import sublime
-import sublime_plugin
+import sublime,sublime_plugin
+import os, webbrowser
 
-import os
-from . import utilities
-
-import webbrowser
+from . import utilities, urlopener
 
 # based on Stackoverflow Search Plugin by Eric Martel (emartel@gmail.com / www.ericmartel.com)
 # @author Leonid Shagabutdinov <leonid@shagabutdinov.com>
@@ -123,36 +120,41 @@ class SourcegraphUsagesCommand(sublime_plugin.TextCommand):
   def execute(self):
     response = utilities.call_srclib(self.view, self.view.sel()[0])
 
+    if not response['Examples']:
+      utilities.StatusTimeout(self.view, 'no examples found')
+      return
+
     #### show examples in output panel
     # get_output_panel doesn't "get" the panel, it *creates* it,
     # so we should only call get_output_panel once
     panel_name = 'examples'
     output = self.view.window().create_output_panel(panel_name)
+
+    urlopener.status_view = self.view
+    urlopener.example_view = output
+    urlopener.examples = response['Examples']
+
     output.set_read_only(False)
     output.set_syntax_file('Packages/Go/Go.tmLanguage')
 
-    if response['Examples']:
-      for example in response['Examples']:
-        output.run_command('append', {
-          'characters': self.format(example, show_src=True)
-        })
-    else:
-      ex_str = "No examples"
-      if response['Def'] and response['Def']['Path']:
-          ex_str += " for " + response['Def']['Path']
-      output.run_command('append', {'characters': ex_str})
+    for example in response['Examples']:
+      output.run_command('append', {
+        'characters': self.format(example, show_src=True)
+      })
 
     output.set_read_only(True)
     self.view.window().run_command("show_panel", {
       "panel": "output." + panel_name
     })
 
+    output.sel().clear()
+
   def format(self, example, show_src):
     result = u'▶ %s/%s:%s-%s\n' % (example['Repo'], example['File'],
       example['StartLine'], example['EndLine'])
 
     if show_src:
-        result += u"\n" + utilities.strip_tags(example['SrcHTML'])
-        result += u"\n▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁\n\n"
+      result += u"\n" + utilities.strip_tags(example['SrcHTML'])
+      result += u"\n" + "_" * 110 + "\n\n"
 
     return result
