@@ -1,0 +1,12 @@
+ERROR
+=====
+
+The error was occured during execution of "src" command.
+
+It can happen if there is not "src" command in your PATH, this means srclib was
+not installed or installed incorrectly. Please, follow installation instructions
+to install srclib: https://srclib.org/install/
+
+If there is bug has occured, you can report it here: https://github.com/sourcegraph/sourcegraph-sublime/issues
+
+Error message:
