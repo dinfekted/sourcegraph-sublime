@@ -85,32 +85,75 @@ class SourcegraphDescribeCommand(sublime_plugin.TextCommand):
 
     definition = response['Def']
 
-    choices = [definition['Name']]
+    documentation = [definition['Name']]
+    documentation.append("=" * len(definition['Name']))
 
     if 'DocHTML' in definition:
-      choices.append(utilities.strip_tags(definition['DocHTML']))
+      documentation.append("\n" + utilities.strip_tags(definition['DocHTML']))
 
-    for k, v in definition['Data'].items():
-      choices.append('%s: %s' % (k, str(v)))
+    if len(definition['Data'].items()):
+      max_key_length = 0
+      max_value_length = 0
 
-    # ST2 lacks view.show_popup_menu
-    if hasattr(self.view, "show_popup_menu"):
-      self.view.show_popup_menu(choices, self.goto_describe_link,
-            sublime.MONOSPACE_FONT)
-    else:
-      # TODO(sqs): multi-line rows don't work in show_quick_panel
-      self.view.window().show_quick_panel(choices, self.goto_describe_link,
-        sublime.MONOSPACE_FONT)
+      for key, value in definition['Data'].items():
+        key, value = str(key), str(value)
 
-  def goto_describe_link(self, picked):
-    if picked == -1 or len(self.results) == 0:
-      return
+        if len(key) > max_key_length:
+          max_key_length = len(key)
 
-    sym = self.results[picked]
-    url = utilities.BASE_URL + ('/%s/symbols/%s/%s' % (quote(sym['repo']),
-      quote(sym['lang']), quote(sym['path'])))
+        if len(value) > max_value_length:
+          max_value_length = len(value)
 
-    webbrowser.open_new_tab(url)
+      formatter = ('| %' + str(max_key_length) + 's | %' +
+        str(max_value_length) + 's |')
+
+      first_line = formatter % ("", "")
+      documentation.append('-' * len(first_line))
+      documentation.append(first_line)
+
+      for key, value in definition['Data'].items():
+        documentation.append(
+          formatter % (key, str(value)) + "\n" +
+          formatter % ("", "")
+        )
+
+      documentation.append('-' * len(first_line))
+
+    panel_name = 'describe'
+    output = self.view.window().create_output_panel(panel_name)
+
+    output.set_read_only(False)
+    output.set_syntax_file('Packages/Go/Go.tmLanguage')
+
+    output.run_command('append', {
+      'characters': "\n".join(documentation)
+    })
+
+    output.set_read_only(True)
+    self.view.window().run_command("show_panel", {
+      "panel": "output." + panel_name
+    })
+
+    output.sel().clear()
+
+    # # ST2 lacks view.show_popup_menu
+    # if hasattr(self.view, "show_popup_menu"):
+    #   self.view.show_popup_menu(choices, self.goto_describe_link,
+    #         sublime.MONOSPACE_FONT)
+    # else:
+    #   # TODO(sqs): multi-line rows don't work in show_quick_panel
+    #   self.view.window().show_quick_panel(choices, self.goto_describe_link,
+    #     sublime.MONOSPACE_FONT)
+
+  # def goto_describe_link(self, picked):
+  #   if picked == -1 or len(self.results) == 0:
+  #     return
+
+  #   sym = self.results[picked]
+  #   url = utilities.BASE_URL + ('/%s/symbols/%s/%s' % (quote(sym['repo']),
+  #     quote(sym['lang']), quote(sym['path'])))
+
+  #   webbrowser.open_new_tab(url)
 
 
 class SourcegraphUsagesCommand(sublime_plugin.TextCommand):
@@ -124,9 +167,6 @@ class SourcegraphUsagesCommand(sublime_plugin.TextCommand):
       utilities.StatusTimeout(self.view, 'no examples found')
       return
 
-    #### show examples in output panel
-    # get_output_panel doesn't "get" the panel, it *creates* it,
-    # so we should only call get_output_panel once
     panel_name = 'examples'
     output = self.view.window().create_output_panel(panel_name)
 
