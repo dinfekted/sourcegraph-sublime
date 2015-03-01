@@ -14,8 +14,7 @@ class ExamplesUrlOpener(sublime_plugin.EventListener):
 
     is_event_ignored = (
       command != 'drag_select' or
-      'by' not in
-      args or
+      'by' not in args or
       args['by'] != 'words' or
       example_view != view
     )
@@ -27,7 +26,7 @@ class ExamplesUrlOpener(sublime_plugin.EventListener):
     sublime.set_timeout(self._open_example, 100)
     return None
 
-  def open(self):
+  def _open_example(self):
     global examples
 
     sel = self.view.sel()[0]
@@ -47,6 +46,5 @@ class ExamplesUrlOpener(sublime_plugin.EventListener):
       return
 
     webbrowser.open_new_tab(match.group(1))
-    self.view.sel()
     self.view.sel().clear()
     utilities.StatusTimeout(status_view, 'definition has opened in browser')

@@ -9,12 +9,9 @@ from . import utilities, urlopener
 class SourcegraphSearchSelectionCommand(sublime_plugin.TextCommand):
 
   def run(self, edit):
-
     for sel in self.view.sel():
       # TODO(sqs): get lang from current file extension
-      query = {
-        'q': utilities.textFromViewSel(self.view, sel)
-      }
+      query = {'q': utilities.textFromViewSel(self.view, sel)}
       utilities.gotoSourcegraph('/search', query)
 
 
@@ -92,32 +89,7 @@ class SourcegraphDescribeCommand(sublime_plugin.TextCommand):
       documentation.append("\n" + utilities.strip_tags(definition['DocHTML']))
 
     if len(definition['Data'].items()):
-      max_key_length = 0
-      max_value_length = 0
-
-      for key, value in definition['Data'].items():
-        key, value = str(key), str(value)
-
-        if len(key) > max_key_length:
-          max_key_length = len(key)
-
-        if len(value) > max_value_length:
-          max_value_length = len(value)
-
-      formatter = ('| %' + str(max_key_length) + 's | %' +
-        str(max_value_length) + 's |')
-
-      first_line = formatter % ("", "")
-      documentation.append('-' * len(first_line))
-      documentation.append(first_line)
-
-      for key, value in definition['Data'].items():
-        documentation.append(
-          formatter % (key, str(value)) + "\n" +
-          formatter % ("", "")
-        )
-
-      documentation.append('-' * len(first_line))
+      documentation.append(self._format_example(definition))
 
     panel_name = 'describe'
     output = self.view.window().create_output_panel(panel_name)
@@ -136,27 +108,37 @@ class SourcegraphDescribeCommand(sublime_plugin.TextCommand):
 
     output.sel().clear()
 
-    # # ST2 lacks view.show_popup_menu
-    # if hasattr(self.view, "show_popup_menu"):
-    #   self.view.show_popup_menu(choices, self.goto_describe_link,
-    #         sublime.MONOSPACE_FONT)
-    # else:
-    #   # TODO(sqs): multi-line rows don't work in show_quick_panel
-    #   self.view.window().show_quick_panel(choices, self.goto_describe_link,
-    #     sublime.MONOSPACE_FONT)
+  def _format_example(self, definition):
+    max_key_length = 0
+    max_value_length = 0
 
-  # def goto_describe_link(self, picked):
-  #   if picked == -1 or len(self.results) == 0:
-  #     return
+    for key, value in definition['Data'].items():
+      key, value = str(key), str(value)
 
-  #   sym = self.results[picked]
-  #   url = utilities.BASE_URL + ('/%s/symbols/%s/%s' % (quote(sym['repo']),
-  #     quote(sym['lang']), quote(sym['path'])))
+      if len(key) > max_key_length:
+        max_key_length = len(key)
 
-  #   webbrowser.open_new_tab(url)
+      if len(value) > max_value_length:
+        max_value_length = len(value)
 
+    formatter = ('| %' + str(max_key_length) + 's | %' +
+      str(max_value_length) + 's |')
+
+    first_line = formatter % ("", "")
+    result = '-' * len(first_line)
+    result.append(first_line)
+
+    for key, value in definition['Data'].items():
+      result.append(
+        formatter % (key, str(value)) + "\n" +
+        formatter % ("", "")
+      )
+
+    result.append('-' * len(first_line))
+    return result
 
 class SourcegraphUsagesCommand(sublime_plugin.TextCommand):
+
   def run(self, edit):
     sublime.set_timeout_async(self.execute, 0)
 
