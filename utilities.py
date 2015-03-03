@@ -88,16 +88,26 @@ def call_srclib(view, sel, tail = []):
   try:
     data = check_output(command, env=getenv())
     return json.loads(data.decode("utf8"))
+  except subprocess.CalledProcessError as error:
+    report_error(str(error) + "\n" + str(error.output))
+    raise error
+  except ValueError as error:
+    report_error("failed to parse json (" + str(error) + "), response: " +
+      str(data))
+    raise error
   except Exception as error:
-    output = view.window().new_file()
-    output.set_scratch(True)
-    message = (sublime.load_resource('Packages/Sourcegraph/error.txt') +
-      ' ' + str(error))
-
-    output.run_command('insert', {'characters': message})
-    utilities.StatusTimeout(view, 'error has occured')
+    report_error(str(error))
+    raise error
   finally:
     view.erase_status('sourcegraph_command')
+
+def report_error(message):
+  output = sublime.active_window().new_file()
+  output.set_scratch(True)
+  text = (sublime.load_resource('Packages/Sourcegraph/error.txt') +
+    ' ' + str(message))
+  output.run_command('insert', {'characters': text})
+  StatusTimeout(sublime.active_window().active_view(), 'error has occured')
 
 class StatusTimeout():
 
@@ -136,17 +146,18 @@ def check_output(*popenargs, **kwargs):
   >>> check_output(['/usr/bin/python', '--version'])
   Python 2.6.2
   """
-  process = subprocess.Popen(stdout=subprocess.PIPE, *popenargs, **kwargs)
-  output, unused_err = process.communicate()
-  retcode = process.poll()
+  process = subprocess.Popen(stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+    *popenargs, **kwargs)
 
+  output, err = process.communicate()
+  retcode = process.poll()
   if retcode:
     cmd = kwargs.get("args")
     if cmd is None:
       cmd = popenargs[0]
 
     error = subprocess.CalledProcessError(retcode, cmd)
-    error.output = output
+    error.output = str(output) + "\n" + str(err)
     raise error
 
   return output

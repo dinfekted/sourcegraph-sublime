@@ -31,16 +31,20 @@ class ExamplesUrlOpener(sublime_plugin.EventListener):
 
     sel = self.view.sel()[0]
 
+    example_number = self.view.substr(sublime.Region(0, sel.a)).count('_' * 110)
+    example = examples[example_number]
+
     line = self.view.substr(self.view.line(sel))
     if line[0] == '▶':
-      url = re.sub(r':\d+\-\d+$', '', line[2:])
+      url = "https://sourcegraph.com/%s/.%s/%s/%s" % (example['DefRepo'],
+        example['DefUnitType'], example['DefUnit'], example['DefPath'])
+
       webbrowser.open_new_tab(url)
       utilities.StatusTimeout(status_view, 'url has opened in browser')
       return
 
-    example_number = self.view.substr(sublime.Region(0, sel.a)).count('_' * 110)
-    example = examples[example_number]
-    expression = r'<a[^>]*href="([^"]*)"[^>]*>(?:<span[^>]*>)?' + re.escape(self.view.substr(sel)) + '<'
+    expression = (r'<a[^>]*href="([^"]*)"[^>]*>(?:<span[^>]*>)?' +
+      re.escape(self.view.substr(sel)) + '<')
     match = re.search(expression, example['SrcHTML'])
     if match == None:
       return

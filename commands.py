@@ -89,13 +89,14 @@ class SourcegraphDescribeCommand(sublime_plugin.TextCommand):
       documentation.append("\n" + utilities.strip_tags(definition['DocHTML']))
 
     if len(definition['Data'].items()):
-      documentation.append(self._format_example(definition))
+      documentation += self._format_definition(definition)
 
     panel_name = 'describe'
     output = self.view.window().create_output_panel(panel_name)
 
     output.set_read_only(False)
     output.set_syntax_file('Packages/Go/Go.tmLanguage')
+
 
     output.run_command('append', {
       'characters': "\n".join(documentation)
@@ -108,7 +109,7 @@ class SourcegraphDescribeCommand(sublime_plugin.TextCommand):
 
     output.sel().clear()
 
-  def _format_example(self, definition):
+  def _format_definition(self, definition):
     max_key_length = 0
     max_value_length = 0
 
@@ -125,7 +126,7 @@ class SourcegraphDescribeCommand(sublime_plugin.TextCommand):
       str(max_value_length) + 's |')
 
     first_line = formatter % ("", "")
-    result = '-' * len(first_line)
+    result = ['-' * len(first_line)]
     result.append(first_line)
 
     for key, value in definition['Data'].items():
@@ -159,9 +160,13 @@ class SourcegraphUsagesCommand(sublime_plugin.TextCommand):
     output.set_read_only(False)
     output.set_syntax_file('Packages/Go/Go.tmLanguage')
 
+    output.run_command('append', {
+      'characters': "// double click on definitions to open them\n\n"
+    })
+
     for example in response['Examples']:
       output.run_command('append', {
-        'characters': self.format(example, show_src=True)
+        'characters': self._format_example(example, show_src=True)
       })
 
     output.set_read_only(True)
@@ -171,7 +176,7 @@ class SourcegraphUsagesCommand(sublime_plugin.TextCommand):
 
     output.sel().clear()
 
-  def format(self, example, show_src):
+  def _format_example(self, example, show_src):
     result = u'▶ %s/%s:%s-%s\n' % (example['Repo'], example['File'],
       example['StartLine'], example['EndLine'])
 
